@@ -1,0 +1,11 @@
+flag,label,wallets,share_wallets,games,share_games,leagues
+F1,matched row is a postponed NBA slot,120,0.0009683588737986298,5,0.0011198208286674132,nba=120
+F2,NBA game after a postponed game of the same pair and season,335,0.002703335189354508,12,0.0026875699888017916,nba=335
+F2_order_after_pp,  of which: order placed after the postponed slot,335,0.002703335189354508,12,0.0026875699888017916,nba=335
+F3,NBA row without valid time,0,0.0,0,0.0,
+D1,resolution before scheduled start (ex post),12,9.683588737986298e-05,3,0.0006718924972004479,nhl=10; nba=2
+D2,resolution outside 1.5-8 h after scheduled start (ex post),1220,0.009844981883619403,61,0.01366181410974244,nba=919; nhl=197; nfl=104
+D2|nba,D2 within nba,919,0.01267568723190025,37,0.018686868686868686,
+D2|nfl,D2 within nfl,104,0.004533961112564304,9,0.018556701030927835,
+D2|nhl,D2 within nhl,197,0.0069166491117196825,15,0.0075,
+F1|F2|F3,any schedule-record flag,455,0.0036716940631531378,17,0.003807390817469205,

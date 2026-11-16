@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.venv/
+data/duckdb_tmp/
+*.log
+round4/figures/*.png
