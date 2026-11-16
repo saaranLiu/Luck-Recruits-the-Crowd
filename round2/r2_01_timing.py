@@ -136,7 +136,7 @@ for lab, key in [('S0', 'S0 order >= 6h before resolution (current A)'), ('S1', 
                  ('S2', 'S2 order >= 1h before independent scheduled start'),
                  ('S3', 'S3 S1 and played as scheduled (resolution 1.5-8h after start)')]:
     mem[lab] = mem.w.isin(smp[key].w)
-mem.to_parquet(f'{R2WORK}/sp_timing.parquet')
+mem.to_parquet(f'{WORK}/sp_timing.parquet')
 comp = S0.assign(group=np.where(S0.lg.isin(['nba', 'nhl', 'nfl']), 'NBA/NHL/NFL', np.where(S0.mtype == 'nodate', 'undated (series, finals, fights, tournaments)', 'other dated leagues')))
 comp.groupby('group').agg(n=('w', 'size'), games=('event', 'nunique'), lead_med_h=('lead', lambda s: s.median() / 3600),
                           lead_p90_h=('lead', lambda s: s.quantile(0.9) / 3600)).to_csv(f'{R2RES}/T1_S0_composition.csv')

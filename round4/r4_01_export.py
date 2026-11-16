@@ -1,4 +1,4 @@
-"""Round 4: one result export for the four-page paper (text, figures, and table read only from this file's outputs).
+"""Export the reported estimates. Tables and figures read only from this file's outputs.
 
 Every displayed interval is a 95% CI from SEs clustered two-way by market (crypto) or game (sports) and by the UTC day
 of the first market's resolution, on the same model and sample as its point estimate.  Specifications are the round-3

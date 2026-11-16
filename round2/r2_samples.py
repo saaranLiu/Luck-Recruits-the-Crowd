@@ -14,7 +14,7 @@ SPLIT = {'UD': pd.Timestamp('2026-01-01').timestamp(), 'SP': pd.Timestamp('2025-
 
 def load_r2():
     d = load_ex()
-    t = pd.read_parquet(f'{R2WORK}/sp_timing.parquet')[['w', 'ind_start', 'S0', 'S1', 'S2', 'S3']]
+    t = pd.read_parquet(f'{WORK}/sp_timing.parquet')[['w', 'ind_start', 'S0', 'S1', 'S2', 'S3']]
     d = d.merge(t, on='w', how='left')
     for c in ['S0', 'S1', 'S2', 'S3']:
         d[c] = d[c].fillna(False).astype(bool)

@@ -6,7 +6,6 @@ from common import *          # noqa: E402,F401  (ROOT, DA, MARKETS, WORK, RES, 
 
 R2 = os.path.dirname(os.path.abspath(__file__))
 R2RES, R2AUD, R2FIG, R2NOTE, R2WORK = (f'{R2}/{d}' for d in ('results', 'audit', 'figures', 'notes', 'work'))
-PAPER = f'{PROJ}/paper'
 OF = f'{ROOT}/database/OrderFilled'
 RELAYERS = ('0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e', '0xc5d563a36ae78145c45a50134d48a1215220f80a')
 SEED = 20261010

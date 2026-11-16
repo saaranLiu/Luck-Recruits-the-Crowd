@@ -21,7 +21,7 @@ CL = {'UD': 'cid', 'SP': 'event'}
 B = 500
 
 d = load_r2()
-q = pd.read_parquet(f'{R2WORK}/quality_r2.parquet')
+q = pd.read_parquet(f'{WORK}/quality_r2.parquet')
 d = d.merge(q.rename(columns={'r_win_leg': 'win_leg'}), on='w', how='left')
 d['has_q2'] = np.where(d.ok90, (d.r_n.fillna(0) > 0).astype(float), np.nan)
 for c in Y_Q:

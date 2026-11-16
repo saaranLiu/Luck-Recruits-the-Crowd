@@ -56,5 +56,5 @@ FROM g GROUP BY w
 q['edge_share'] = q.r_ne / q.r_sh
 q['edge_cost'] = q.r_ce / q.r_c
 q['ret_turn'] = (q.r_ne - q.r_fee) / q.r_c
-q.to_parquet(f'{R2WORK}/quality_r2.parquet')
+q.to_parquet(f'{WORK}/quality_r2.parquet')
 log('saved', len(q), 'with scored fills', (q.r_n > 0).sum())
