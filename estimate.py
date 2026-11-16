@@ -1,8 +1,7 @@
-"""Export the reported estimates. Tables and figures read only from this file's outputs.
+"""Re-estimate the current crypto A and sports S1 effects.
 
 Every displayed interval is a 95% CI from SEs clustered two-way by market (crypto) or game (sports) and by the UTC day
-of the first market's resolution, on the same model and sample as its point estimate.  Specifications are the round-3
-main models (r2_samples.SPEC_R3); nothing is re-specified here.
+of the first market's resolution, on the same model and sample as its point estimate.
 
 Parts
   M   own-window one-week (and 1/30/90-day) effects, samples A and S1                       -> headline effects
@@ -10,32 +9,30 @@ Parts
       standardized levels: lost = mean_i yhat_i(win=0), won = lost + beta (linear g-computation, same model)
   P   any activity in disjoint periods after resolution, common 90-day sample
   D   B1: cumulative 7-day versus 30/90-day effect, estimated as the effect on (ret_h - ret7d), common sample
-  R   robustness of the one-week effect (own window): market FE, rich pre-order controls, timing, schedule flags,
-      lead >= 1 h; plus bootstrap intervals and placebo / simulated-null p values carried over from round 3
+  R   robustness of the one-week effect: market FE, rich pre-order controls, timing, schedule flags,
+      lead >= 1 h; bootstrap intervals and placebo / simulated-null p values are read from data/checks
   E   early / late period effects (own window; pooled model, period-specific FE and controls)
   K   calibration: win rate by 5-cent price bin
-  Q   later bets among returners (round-3 T4, newcomer-equal weighting)
-Outputs: round4/results/r4_ledger.csv (one row per estimate) and r4_curves.csv (curve grid).
+  Q   later bets among returners, read from data/checks
+Outputs: results/ledger.csv and results/curves.csv.
 """
-import os, sys
-R4 = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, f'{R4}/../round3/pipeline')
-from r2_common import *            # noqa: E402  (PROJ, WORK, RES, R2RES, SEED, DAY, log)
+import os
+from common import *               # noqa: E402  (WORK, RES, DAY, log)
 import numpy as np, pandas as pd   # noqa: E402
 from scipy import stats            # noqa: E402
 from multiprocessing import Pool   # noqa: E402
-from r2_samples import load_r2, samples_r2, spec   # noqa: E402
-from r2_fast import build, ols_fit, cluster_V       # noqa: E402
+from samples import load_sample, samples as samples_r2, spec   # noqa: E402
+from ols import build, ols_fit, cluster_V       # noqa: E402
 
-OUT = f'{R4}/results'
+OUT = RES
 os.makedirs(OUT, exist_ok=True)
-R3 = f'{R4}/../round3'
-VERSION = 'r4_01 on round-3 samples/specs (SPEC_R3), exante.parquet 2026-10-10'
+CHECKS = f'{WORK}/checks'
+VERSION = 'crypto A and sports S1'
 CL = {'UD': 'cid', 'SP': 'event'}
 DOM = {'UD': 'crypto', 'SP': 'sports'}
 SAMP = {'UD_A': 'A', 'SP_S1': 'S1'}
 
-d = load_r2()
+d = load_sample()
 S = samples_r2(d)
 for k in SAMP:
     S[k] = S[k].copy()
@@ -132,7 +129,7 @@ PERIODS = [('act0_7', '1-7'), ('act8_14', '8-14'), ('act15_21', '15-21'), ('act2
 if __name__ == '__main__':
     with Pool(min(48, os.cpu_count() or 4)) as pool:
         cur = pd.DataFrame(pool.map(curve_job, [(k, h) for k in SAMP for h in GRID_H]))
-    cur.to_csv(f'{OUT}/r4_curves.csv', index=False)
+    cur.to_csv(f'{OUT}/curves.csv', index=False)
     for _, r in cur[cur.hours.isin([24, 168, 720, 1440, 2160])].iterrows():
         ROWS.append(dict(result_id=f'C:{r["sample"]}:{r.hours:g}h', domain=DOM[r['sample'][:2]], sample_rule=SAMP[r['sample']],
                          observation_sample='common 90d', outcome='traded again (any fill)', horizon_or_period=f'{r.days:g} days',
@@ -167,7 +164,7 @@ if __name__ == '__main__':
         f = fit(S[k], 'ret7d', ctrl, ['pbin'], cl, fe='cid')
         add(f'R:{k}:market_fe', k, SAMP[k], 'own window, markets with both sides', 'traded again', '7 days', 'regression coefficient',
             'market FE + price-bin FE + main controls', summarize(f, ycol='ret7d'))
-    ud = pd.read_parquet(f'{WORK}/UD_A_features.parquet')
+    ud = pd.read_parquet(f'{WORK}/crypto_features.parquet')
     ud['lsched'] = np.log1p(ud.tend - ud.ts0)
     ud['rday'] = (ud.res_ts // DAY).astype(int)
     for c in ['r15m', 'r1h', 'r4h', 'r24h', 'vol24', 'prev1', 'prev4']:
@@ -188,8 +185,8 @@ if __name__ == '__main__':
     f = fit(v[v.lead1h], 'ret7d', ctrl, cat, cl)
     add('R:SP_S1:lead1h', 'SP_S1', 'S1, order >= 1 h before scheduled start', 'own window', 'traded again', '7 days',
         'regression coefficient', MAINSPEC['SP'], summarize(f, ycol='ret7d'))
-    # round-3 rows already estimated with two-way SEs on the same models (A2 timing, A1 schedule flags)
-    a2 = pd.read_csv(f'{R3}/results/A2_time_controls.csv')
+    # Saved checks. These rows are not re-estimated here.
+    a2 = pd.read_csv(f'{CHECKS}/A2_time_controls.csv')
     lab = {('UD', 'M0'): 'actual time to resolution', ('UD', 'M2'): 'no timing term', ('UD', 'M1'): 'scheduled window end (main)',
            ('SPM', 'M1'): 'bins of time to scheduled start', ('SPR', 'M1'): 'rich controls (league, lead bins, type, side, fills, 1c bins, dow)'}
     for (key, m), txt in lab.items():
@@ -198,13 +195,13 @@ if __name__ == '__main__':
         add(f'R:{k}:A2_{key}_{m}', k, SAMP[k], 'own window', 'traded again', '7 days', 'regression coefficient', txt,
             dict(estimate_pp=r.b, se_1way=r.se_cluster, se_2way=r.se_2way_rday, ci_low_pp=r.b - 1.96 * r.se_2way_rday,
                  ci_high_pp=r.b + 1.96 * r.se_2way_rday, n_wallets=r.n, boot_rday_lo=r.boot_lo, boot_rday_hi=r.boot_hi))
-    a1 = pd.read_csv(f'{R3}/results/A1_sensitivity.csv')
+    a1 = pd.read_csv(f'{CHECKS}/A1_sensitivity.csv')
     r = a1[a1['sample'].str.startswith('excl. F1-F3 (') & (a1.y == 'ret7d')].iloc[0]
     add('R:SP_S1:excl_nba_flags', 'SP_S1', 'S1 excluding flagged NBA orders (0.37%)', 'own window', 'traded again', '7 days',
         'regression coefficient', MAINSPEC['SP'], dict(estimate_pp=r.b, se_1way=r.se_game, se_2way=r.se_2way_rday,
                                                        ci_low_pp=r.lo_2way, ci_high_pp=r.hi_2way, n_wallets=r.n, n_games=r.games))
-    t5 = pd.read_csv(f'{R3}/pipeline/results/T5_persistent_activity.csv')
-    t6 = pd.read_csv(f'{R3}/pipeline/results/T6_null_model_sensitivity.csv')
+    t5 = pd.read_csv(f'{CHECKS}/T5_persistent_activity.csv')
+    t6 = pd.read_csv(f'{CHECKS}/T6_null_model_sensitivity.csv')
     for k in SAMP:
         r = t5[(t5['sample'] == k) & (t5.y == 'ret7d') & (t5.frame == 'own window')].iloc[0]
         for blk in ['rday', 'rweek']:
@@ -263,9 +260,9 @@ if __name__ == '__main__':
                          first_order=str(pd.to_datetime(v.ts0.min(), unit='s').date()), last_order=str(pd.to_datetime(v.ts0.max(), unit='s').date()),
                          never_return_share=v.t_next.isna().mean(), source_version=VERSION))
 
-    # ---- Q: later bets among returners (round-3 T4, unchanged) -------------------------------------------------------------
-    q = pd.read_csv(f'{R3}/pipeline/results/T4_quality_and_equivalence.csv')
-    cov = pd.read_csv(f'{R3}/pipeline/results/T4_coverage.csv').set_index('sample')
+    # ---- Q: later bets among returners (saved comparison) --------------------------------------------------------------
+    q = pd.read_csv(f'{CHECKS}/T4_quality_and_equivalence.csv')
+    cov = pd.read_csv(f'{CHECKS}/T4_coverage.csv').set_index('sample')
     for k in SAMP:
         for met, mg, sc in [('edge_share', 0.01, 100), ('ret_turn', 0.02, 100), ('win_leg', 0.02, 100)]:
             r = q[(q['sample'] == k) & (q.metric == met) & (q.weight == 'wallet-equal (main)') & np.isclose(q.margin, mg)].iloc[0]
@@ -274,10 +271,10 @@ if __name__ == '__main__':
                              ci_low_pp=sc * r.ci90_lo, ci_high_pp=sc * r.ci90_hi, ci_level=0.90, ci_method=f'cluster by {r.cluster}',
                              p_2way=r.p_tost, margin=sc * mg, n_wallets=r.n, base_lost_raw=sc * r.base,
                              share_trade_win=cov.loc[k, 'share_trade_win'], share_trade_lose=cov.loc[k, 'share_trade_lose'],
-                             source_version='round-3 T4_quality_and_equivalence'))
+                             source_version='saved later-trade comparison'))
 
     led = pd.DataFrame(ROWS)
-    led.to_csv(f'{OUT}/r4_ledger.csv', index=False)
+    led.to_csv(f'{OUT}/ledger.csv', index=False)
     pd.set_option('display.width', 250); pd.set_option('display.max_rows', 400); pd.set_option('display.max_colwidth', 40)
     show = ['result_id', 'observation_sample', 'horizon_or_period', 'estimate_pp', 'se_1way', 'se_2way', 'ci_low_pp', 'ci_high_pp', 'p_2way', 'n_wallets', 'base_lost_raw']
     print(led[[c for c in show if c in led]].round(3).to_string())

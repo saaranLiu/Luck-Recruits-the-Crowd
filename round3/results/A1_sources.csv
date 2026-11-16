@@ -1,4 +1,0 @@
-league,file,project,underlying,downloaded,rows_since_2022_10,time_field,status_values,revision_history,rows_time_invalid
-NBA,nba_schedule_master.parquet,sportsdataverse/hoopR-nba-data,ESPN scoreboard API,2026-10-10,6509,"date (UTC, minutes)",STATUS_FINAL=5291; STATUS_SCHEDULED=1206; STATUS_POSTPONED=12,no; one row per game_id at its current date/time; postponed slots kept as separate rows,6
-NHL,nhl_schedule_master.parquet,sportsdataverse/fastRhockey-nhl-data,NHL web API,2026-10-10,5592,"game_time (UTC, minutes)",OFF=5592,"no; completed games only, at their final date/time; no postponed rows",0
-NFL,games.csv,nflverse/nfldata,nflverse game table,2026-10-10,1362,"gameday + gametime (US Eastern, minutes)",no status field (result present = played),no; final date/time; cancelled 2022 BUF-CIN game absent,0

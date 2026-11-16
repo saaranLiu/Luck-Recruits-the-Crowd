@@ -14,8 +14,7 @@ H_S = {'5m': 300, '15m': 900, '1h': 3600, '4h': 14400}
 
 
 def load_ex():
-    con = connect(threads=32, mem='200GB')
-    d = con.sql(f"SELECT * FROM '{WORK}/exante.parquet'").df()
+    d = pd.read_parquet(f'{WORK}/exante.parquet')
     d['lstake'] = np.log(d.stake0)
     d['pi'] = d.p0
     d['pbin'] = np.floor(d.p0 * 20).astype(int)
